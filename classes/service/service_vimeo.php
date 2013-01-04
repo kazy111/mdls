@@ -182,7 +182,10 @@ class service_vimeo implements service {
 			$items = $this->request($uri, 'GET', array(), array('Accept'=>'application/json','FailOnAccessError'=>true));
 			//print_r($items);
 			//break;
-			if (!$items || !$items->videos || !$items->videos->video || count($items->videos->video) === 0 ) {
+			if (!$items) {
+				return FALSE;
+			}
+			if (!$items->videos || !$items->videos->video || count($items->videos->video) === 0 ) {
 				break;
 			}
 			
@@ -227,6 +230,7 @@ class service_vimeo implements service {
 		$this->set_last_update($max_updated);
 
 		$manager->update_service_last_update($this);
+		return TRUE;
 	}
 
 	// TODO import list

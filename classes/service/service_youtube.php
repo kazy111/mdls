@@ -73,13 +73,13 @@ class service_youtube implements service {
 				if(strlen($client->authorization_error))
 				{
 					$client->error = $client->authorization_error;
-					$success = false;
+					$success = FALSE;
 				}
 				elseif(strlen($client->access_token))
 				{
 					$success = $client->CallAPI(
 						'http://gdata.youtube.com/feeds/api/users/default?v=2',
-						'GET', array(), array('FailOnAccessError'=>true), $user);
+						'GET', array(), array('FailOnAccessError'=>TRUE), $user);
 				}
 			}
 			$success = $client->Finalize($success);
@@ -100,7 +100,7 @@ class service_youtube implements service {
 
 			return $service;
 		} else {
-			return false;
+			return FALSE;
 		}
 
 	}
@@ -139,7 +139,7 @@ class service_youtube implements service {
 		$client->scope = 'http://gdata.youtube.com';
 		if(($success = $client->Initialize()))
 		{
-			$client->session_started = true;
+			$client->session_started = TRUE;
 			$_SESSION['OAUTH_ACCESS_TOKEN'][$client->access_token_url] = $access_token;
 
 			if(($success = $client->Process()))
@@ -147,7 +147,7 @@ class service_youtube implements service {
 				if(strlen($client->authorization_error))
 				{
 					$client->error = $client->authorization_error;
-					$success = false;
+					$success = FALSE;
 				}
 				elseif(strlen($client->access_token))
 				{
@@ -170,7 +170,7 @@ class service_youtube implements service {
 		if($success) {
 			return $result;
 		} else {
-			return false;
+			return FALSE;
 		}
 	}
 
@@ -184,11 +184,14 @@ class service_youtube implements service {
 		$updated = '';
 		$max_updated = date(0);
 		// get recent user events
-		while(true) {
+		while(TRUE) {
 
-			$events = $this->request('http://gdata.youtube.com/feeds/api/users/default/events?v=2&start-index='.$index.'&max-results='.$max_results.'&key='.self::$developer_key, 'GET', array(), array('FailOnAccessError'=>true));
+			$events = $this->request('http://gdata.youtube.com/feeds/api/users/default/events?v=2&start-index='.$index.'&max-results='.$max_results.'&key='.self::$developer_key, 'GET', array(), array('FailOnAccessError'=>TRUE));
 			//print_r($events);
-			if (!$events || !$events->entry ) {
+			if (!$events) {
+				return FALSE;
+			}
+			if (!$events->entry ) {
 				break;
 			}
 			foreach ($events->entry as $e) {
@@ -232,7 +235,7 @@ class service_youtube implements service {
 				'content'   => $req,
 			)));
 			//print_r(file_get_contents('http://gdata.youtube.com/feeds/api/videos/batch?v=2', false, $stream));
-			$videos = simplexml_load_string(file_get_contents('http://gdata.youtube.com/feeds/api/videos/batch?v=2&key='.self::$developer_key, false, $stream), 'SimpleXMLElement', LIBXML_NOCDATA);
+			$videos = simplexml_load_string(file_get_contents('http://gdata.youtube.com/feeds/api/videos/batch?v=2&key='.self::$developer_key, FALSE, $stream), 'SimpleXMLElement', LIBXML_NOCDATA);
 			//print_r($videos);
 			foreach ($videos->entry as $v) {
 				$media = $v->children('http://search.yahoo.com/mrss/');
@@ -258,6 +261,7 @@ class service_youtube implements service {
 		if($this->get_refreshed()){
 			$manager->upsert_service($this);
 		}
+		return TRUE;
 	}
 
 	// TODO import list

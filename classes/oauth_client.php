@@ -1623,6 +1623,11 @@ class oauth_client_class
 					}
 					else
 					{
+						if(IsSet($access_token['expiry']) && IsSet($access_token['refresh_token'])
+						&& strcmp($access_token['expiry'], gmstrftime('%Y-%m-%d %H:%M:%S', time()+1800)) < 0) {
+							return $this->RefreshToken();
+						}
+
 						$this->access_token = $access_token['value'];
 						if(IsSet($access_token['type']))
 							$this->access_token_type = $access_token['type'];

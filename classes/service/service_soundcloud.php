@@ -68,6 +68,7 @@ class service_soundcloud implements service {
 
 		/* API permissions
 		 */
+		$client->scope = 'non-expiring';
 		if(($success = $client->Initialize()))
 		{
 			//$client->session_started = true;
@@ -122,9 +123,12 @@ class service_soundcloud implements service {
 		$access_token = array();
 		$access_token['authorized'] = TRUE;
 		$access_token['value'] = $this->get_access_token();
-		$access_token['secret'] = $this->get_access_token_secret();
-		$access_token['expiry'] = $this->get_access_token_expire();
-		$access_token['refresh_token'] = $this->get_refresh_token();
+		if($this->get_access_token_secret())
+			$access_token['secret'] = $this->get_access_token_secret();
+		if($this->get_access_token_expire())
+			$access_token['expiry'] = $this->get_access_token_expire();
+		if($this->get_refresh_token())
+			$access_token['refresh_token'] = $this->get_refresh_token();
 
 		$client = new oauth_client_class;
 		$client->server = 'SoundCloud';
@@ -194,6 +198,9 @@ class service_soundcloud implements service {
 			$items = $this->request($uri, 'GET', array(), array('Accept'=>'application/json','FailOnAccessError'=>true));
 
 			//print_r($items);
+			if (!$items) {
+				return FALSE;
+			}
 			if (!$items || count($items) === 0 ) {
 				break;
 			}
@@ -231,6 +238,7 @@ class service_soundcloud implements service {
 		if($this->get_refreshed()){
 			$manager->upsert_service($this);
 		}
+		return TRUE;
 	}
 
 	// TODO import list
