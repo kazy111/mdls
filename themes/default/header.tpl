@@ -21,10 +21,19 @@ $(document).ready(function(){
 	$('.volume-slider').slider({
 		change: function(event, ui) {
 			var vol = $('.volume-slider').slider('value');
-			set_volume(vol / 100.0);
+			volume(vol / 100.0);
 			WriteCookie('player-volume', vol, 90);
 		}
 	}).slider('value', vol);
+
+	var val = ReadCookie('player-loop');
+	if(val=='true'){
+		$('.loop-check').attr('checked', 'checked');
+	}
+	$('.loop-check').on('click', function(event){
+		loop(this.checked);
+		WriteCookie('player-loop', (this.checked ? 'true' : 'false'), 90);
+	});
 
 	// video setup
 	init('.video', 400);
@@ -32,7 +41,7 @@ $(document).ready(function(){
 		event.preventDefault();
 		load(this.getAttribute("type"), this.getAttribute("href"));
 		play();
-	})
+	});
 });
 </script>
 </head>
@@ -45,6 +54,7 @@ $(document).ready(function(){
 	<div class="volume-slider-box">
 		<a onclick="play()">|&gt;</a> &nbsp;&nbsp;
 		<a onclick="pause()">||</a> &nbsp;&nbsp;
+		loop: <input type="checkbox" class="loop-check"></input> &nbsp;&nbsp;
 		Vol: <div class="volume-slider"></div>
 	</div>
 </div>

@@ -45,13 +45,19 @@ body{
 }
 .header .volume-slider-box {
   float: right;
+  position: fixed;
+  right: 0;
+  top: 0;
+  padding-right: 150px;
 }
 .volume-slider {
   width: 120px;
-  height: 12px;
   float: right;
   margin-left: 0.5em;
   margin-right: 1em;
+  position: fixed !important;
+  top: 0 !important;
+  right: 0 !important;
 }
 
 .control-box {

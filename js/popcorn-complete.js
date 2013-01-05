@@ -4853,7 +4853,7 @@
       // kazy111 hack 2013/01/03
       if(player) {
         opts = {};
-        if(impl.autoplay) opts.callback = function(){ player.play(); };
+        if(impl.autoplay) opts.callback = function(){ player.play(); setVolume(getVolume()); };
         player.load(aSrc, opts);
         return;
       }

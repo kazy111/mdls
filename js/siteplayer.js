@@ -6,6 +6,7 @@ var player_height = 400;
 var header_height = 20;
 var player_volume = 1;
 var player_autoplay = true;
+var player_loop = true;
 
 function init(id, height)
 {
@@ -35,10 +36,12 @@ function load(type, url)
 	}
 
 	n.children().each(function(x,y){
-		if( ! y.id.startsWith('soundcloud-') ) {
+		if( y.id.indexOf('soundcloud-') !== 0 ) {
 			y.parentNode.removeChild(y);
 		} else {
 			y.style.visibility = 'hidden';
+			y.style.zIndex = -1;
+			y.style.width = 0;
 		}
 	});
 
@@ -56,8 +59,10 @@ function load(type, url)
 				player.currentTime(0);
 				player.media.src = url;
 				n.children().each(function(x,y){
-					if( y.id.startsWith('soundcloud-') ) {
+					if( y.id.indexOf('soundcloud-') === 0 ) {
 						y.style.visibility = 'visible';
+						y.style.zIndex = 0;
+						y.style.width = '100%';
 					}
 				});
 				break;
@@ -66,28 +71,8 @@ function load(type, url)
     player_type = type;
      // add a footnote at 2 seconds, and remove it at 6 seconds
 	player.controls(true);
-	player.autoplay(player_autoplay);
 	player.volume(player_volume);
-	player.on('ended', function(){
-		console.log('ended');
-		switch(player_type){
-			case '1': setTimeout(function(){
-						player.play(0);
-						player.pause();
-						player.play();
-					}, 500); break;
-			case '2': setTimeout(function(){
-						//player.play(0);
-						//player.pause();
-						player.play();
-					}, 1000); break;
-			case '3': player.play(0);
-					break;
-		}
-	});
-	player.on('error', function(){
-
-	});
+	player.autoplay(player_autoplay);
 	// fallback autoplay
 	player.on('canplay', function(){
 		if(player_autoplay){
@@ -96,6 +81,13 @@ function load(type, url)
 			}, 500);
 		}
 	});
+
+	loop(player_loop);
+
+	player.on('error', function(){
+		// move to next?
+	});
+
 
 }
 
@@ -134,13 +126,42 @@ function destroy()
 	if(player) player.destroy();
 }
 
-function set_volume(vol)
+function volume(vol)
 {
-	player_volume = vol;
-    if (player) player.volume(vol);
+	if (vol !== undefined) {
+		player_volume = vol;
+		if (player) player.volume(vol);
+	} else {
+		return player ? player.volume() : 0;
+	}
 }
 
-function get_volume()
+function loop(val)
 {
-	return player ? player.volume() : 0;
+	if(val !== undefined) {
+		player_loop = val;
+		if(!player) return;
+		if(val){
+			player.on('ended', function(){
+				switch(player_type){
+					case '1': setTimeout(function(){
+								player.play(0);
+								player.pause();
+								player.play();
+							}, 500); break;
+					case '2': setTimeout(function(){
+								//player.play(0);
+								//player.pause();
+								player.play();
+							}, 1000); break;
+					case '3': player.play(0);
+							break;
+				}
+			});
+		} else {
+			player.off('ended');
+		}
+	} else {
+		return player_loop;
+	}
 }
