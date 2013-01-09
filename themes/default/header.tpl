@@ -27,6 +27,7 @@ $(document).ready(function(){
 	}).slider('value', vol);
 
 	var val = ReadCookie('player-loop');
+	loop(val=='true'?true:false);
 	if(val=='true'){
 		$('.loop-check').attr('checked', 'checked');
 	}

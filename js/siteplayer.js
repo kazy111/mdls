@@ -71,10 +71,10 @@ function load(type, url)
     player_type = type;
      // add a footnote at 2 seconds, and remove it at 6 seconds
 	player.controls(true);
-	player.volume(player_volume);
 	player.autoplay(player_autoplay);
 	// fallback autoplay
 	player.on('canplay', function(){
+		player.volume(player_volume);
 		if(player_autoplay){
 			setTimeout(function(){
 				if( player && player.paused() ) player.play();

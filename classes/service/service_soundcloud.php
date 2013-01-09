@@ -184,7 +184,7 @@ class service_soundcloud implements service {
 	public function update_likes($manager)		// update likes
 	{
 
-		$offset = 1;
+		$offset = 0;
 		$max_results = 20;
 
 		$insert_count = 0;
