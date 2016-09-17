@@ -12,11 +12,17 @@
 
 {$info_data}
 
+<br />
+{$item_count} items
+{$pager_data}
+
 <div class="article">
 {$item_data}
 </div>
 
 </div>
+
+{$pager_data}
 
 {include file="$file_path/themes/default/footer_text.tpl"}
 

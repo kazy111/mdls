@@ -788,6 +788,7 @@ class oauth_client_class
 	Function GetAccessToken(&$access_token)
 	{
 		if(!$this->session_started
+		&& session_id() == ''
 		&& !session_start())
 			return($this->SetPHPError('it was not possible to start the PHP session', $php_error_message));
 		$this->session_started = true;
@@ -1199,6 +1200,7 @@ class oauth_client_class
 			default:
 				return($this->SetError($this->oauth_version.' is not a supported version of the OAuth protocol'));
 		}
+		//print($url2);
 		$ret = $this->SendAPIRequest($url2, $method, $parameters, $oauth, $options, $response, $expire);
 		if(IsSet($expire) && $expire && strlen($this->refresh_token))
 		{

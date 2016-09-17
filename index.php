@@ -4,6 +4,8 @@
 
 	$GLOBALS['extra'] = '';//is_mobile() ? 'mobile_' : '';
 
+	$page_index = ( is_numeric($_GET['p']) ? (int)$_GET['p'] : 0 );
+	$items_par_page = 50;
 
 	$page->set_title('Index');
 
@@ -37,7 +39,8 @@
 
 		$contents_list = '<div>';
 		$arr = array();
-		$manager->get_likes($_SESSION['user']);
+		$likes_count = $manager->get_likes_count($_SESSION['user']);
+		$manager->get_likes($_SESSION['user'], $page_index, $items_par_page);
 		foreach($_SESSION['user']->get_list(1) as $item){
 			$arr['title'] = $item->get_title();
 			$arr['permalink'] = $item->get_permalink();
@@ -52,15 +55,32 @@
 		// not logined
 		$user_link = '<a id="login_link" href="Login.php">Login with Twitter</a>';
 		$contents_list = '';
+		$likes_count = 0;
 	}
 
 	$info = $user_link;
 	$info .= '<div>'.$service_link.'</div>';
 
 
+	// create pager
+	$max_pages = (int)($likes_count / $items_par_page);
+	$pager_info = '<div>';
+	for( $i = 0; $i <= $max_pages; $i++){
+		if($i == $page_index){
+			$pager_info .= ' ' . ($i + 1);
+		} else {
+			$pager_info .= ' <a href='.get_url_query(Array('p'=>$i)).'>' . ($i + 1) . '</a>';
+		}
+	}
+	$pager_info .= '</div>';
 
 	$data = array();
+	$data['page_index'] = $page_index;
+	$data['items_par_page'] = $items_par_page;
+	$data['max_pages'] = $max_pages;
+	$data['item_count'] = $likes_count;
 	$data['info_data'] = $info;
+	$data['pager_data'] = $pager_info;
 	$data['item_data'] = $contents_list;
 	$page->set('index', $data);
 

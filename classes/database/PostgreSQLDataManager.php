@@ -25,7 +25,22 @@ class PostgreSQLDataManager implements IDataManager {
     */
   function get_user($id)
   {
-    $ret = $this->db->query_ex('SELECT id, user_screen_name, user_name, type, email, last_login FROM user_table WHERE id = ' . $id);
+    $ret = $this->db->query_ex('SELECT id, user_screen_name, user_name, type, email, last_login FROM user_table WHERE id = ' . $this->db->sanitize($id));
+
+    if (!$ret || !array_key_exists('id', $ret)) {
+      return FALSE;
+    }
+
+    $user = New user($ret['id'], $ret['user_screen_name'], $ret['user_name'], $ret['type'], $ret['email'], date('c', strtotime($ret['last_login'])));
+
+    $this->get_service($user);
+    
+    return $user;
+  }
+
+  function get_user_by_screen_name($scname)
+  {
+    $ret = $this->db->query_ex('SELECT id, user_screen_name, user_name, type, email, last_login FROM user_table WHERE user_screen_name = \'' . $this->db->sanitize($scname) . '\'');
 
     if (!$ret || !array_key_exists('id', $ret)) {
       return FALSE;
@@ -79,8 +94,20 @@ class PostgreSQLDataManager implements IDataManager {
 
   }
 
+  function get_likes_count($user)
+  {
+    $sql = 'SELECT COUNT(i.*) AS c FROM like_table l INNER JOIN item_table i ON l.item_id = i.id '
+        .' WHERE l.user_id = ' . $user->id;
 
-  function get_likes($user)
+    $result = $this->db->query($sql);
+
+    while(($arr = $this->db->fetch($result)) != NULL ){
+      return $arr['c'];
+    }
+    return 0;
+  }
+
+  function get_likes($user, $page_index, $item_count)
   {
     $sql = 'SELECT i.* FROM like_table l INNER JOIN item_table i ON l.item_id = i.id '
         .' WHERE l.user_id = ' . $user->id;
@@ -94,6 +121,7 @@ class PostgreSQLDataManager implements IDataManager {
         $sql .= ' ORDER BY l.create_date DESC';
         break;
     }
+    $sql .= ' LIMIT ' . $item_count . ' OFFSET ' . ($page_index * $item_count);
 
     $result = $this->db->query($sql);
 
@@ -113,7 +141,7 @@ class PostgreSQLDataManager implements IDataManager {
             . '\', user_name = \'' . $this->db->sanitize($user_name)
             . '\', type = ' . $this->db->sanitize($type)
             . ', last_login = current_timestamp' 
-            . ' where id = ' . $id;
+            . ' where id = ' . $this->db->sanitize($id);
     $this->db->query($sql);
 
     // insert user (only user not exists)
@@ -121,7 +149,7 @@ class PostgreSQLDataManager implements IDataManager {
             . $this->db->sanitize($id) . ', \'' . $this->db->sanitize($user_screen_name)
             . '\', \'' . $this->db->sanitize($user_name)
             . '\', ' . $this->db->sanitize($type)
-            . ', \'\', current_timestamp WHERE NOT EXISTS (SELECT 1 FROM user_table WHERE id = ' . $id . ')';
+            . ', \'\', current_timestamp WHERE NOT EXISTS (SELECT 1 FROM user_table WHERE id = ' . $this->db->sanitize($id) . ')';
     $this->db->query($sql);
   }
 
@@ -158,8 +186,8 @@ class PostgreSQLDataManager implements IDataManager {
     }
     // insert user (only user not exists)
     $sql = 'INSERT INTO like_table (user_id, item_id, create_date) SELECT '
-            . $user_id . ', ' . $item_id
-            . ', \''. $create_date .'\' WHERE NOT EXISTS (SELECT 1 FROM like_table WHERE user_id = ' . $user_id . ' AND item_id = ' . $item_id . ')';
+            . $this->db->sanitize($user_id) . ', ' . $this->db->sanitize($item_id)
+            . ', \''. $create_date .'\' WHERE NOT EXISTS (SELECT 1 FROM like_table WHERE user_id = ' . $this->db->sanitize($user_id) . ' AND item_id = ' . $this->db->sanitize($item_id) . ')';
     return $this->db->affected_rows($this->db->query($sql));
   }
 

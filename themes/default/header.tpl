@@ -40,8 +40,13 @@ $(document).ready(function(){
 	init('.video', 400);
 	$('a.play-link').on('click', function(event){
 		event.preventDefault();
-		load(this.getAttribute("type"), this.getAttribute("href"));
-		play();
+		pause();
+		var type = this.getAttribute("type");
+		var href = this.getAttribute("href")
+		setTimeout(function(){
+			load(type, href);
+			play();
+		}, 200);
 	});
 });
 </script>

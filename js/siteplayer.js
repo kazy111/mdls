@@ -19,7 +19,8 @@ function init(id, height)
 	players = {
 		// 1: Popcorn.youtube(player_id),
 		// 2: Popcorn.vimeo(player_id),
-		3: Popcorn.soundcloud(player_id, '', {"controls": 1, "autoplay": true})
+		// 3: Popcorn.soundcloud(player_id, '', {"controls": 1, "autoplay": true})
+		3: Popcorn( Popcorn.HTMLSoundCloudAudioElement(player_id) )
 	};
 }
 
@@ -32,7 +33,8 @@ function load(type, url)
 
 	if (player) {
 		player.pause();
-		player.destroy();
+		if( player_type != "3" )
+			player.destroy();
 	}
 
 	n.children().each(function(x,y){
@@ -50,44 +52,62 @@ function load(type, url)
 	n.slideDown();
 	$('.main').css('padding-top', player_height+header_height);
 
-	var options = {"controls": 1, "autoplay": player_autoplay};
-	switch(type){
-		case "1": player = Popcorn.youtube(player_id, url+'&showinfo=1', options); break;
-		case "2": player = Popcorn.vimeo(player_id, url, options); break;
-		// case "3": player = Popcorn.soundcloud(player_id, url, options); break;
-		case "3": player = players[3];
-				player.currentTime(0);
-				player.media.src = url;
-				n.children().each(function(x,y){
-					if( y.id.indexOf('soundcloud-') === 0 ) {
-						y.style.visibility = 'visible';
-						y.style.zIndex = 0;
-						y.style.width = '100%';
-					}
-				});
-				break;
-		default: player = false;
+	var needInitialize = true;
+	// create player
+
+	if (type == "3") { // SoundCloud
+		player = players[3];
+		if (player.media.src != "") {
+			//player.currentTime(0);
+			needInitialize = false;
+		}
+		player.media.src = url;
+
+		n.children().each(function(x,y){
+			if( y.id.indexOf('soundcloud-') === 0 ) {
+				y.style.visibility = 'visible';
+				y.style.zIndex = 0;
+				y.style.width = '100%';
+			}
+		});
+
+	} else {
+		player = Popcorn.smart(player_id, url);
 	}
-    player_type = type;
-     // add a footnote at 2 seconds, and remove it at 6 seconds
+  
+	player_type = type;
+
+	// add a footnote at 2 seconds, and remove it at 6 seconds
 	player.controls(true);
+
 	player.autoplay(player_autoplay);
-	// fallback autoplay
-	player.on('canplay', function(){
-		player.volume(player_volume);
+	if (needInitialize) {
+		// fallback autoplay
+		player.on('canplay', function(){
+			player.volume(player_volume);
+			if(player_autoplay){
+				setTimeout(function(){
+					if( player && player.paused() ) player.play();
+				}, 500);
+			}
+		});
+
+		player
+
+		loop(player_loop);
+
+		player.on('error', function(){
+			// move to next?
+		});
+	} else {
 		if(player_autoplay){
 			setTimeout(function(){
-				if( player && player.paused() ) player.play();
+				if( player && player.paused() ) {
+					 player.play();
+				}
 			}, 500);
 		}
-	});
-
-	loop(player_loop);
-
-	player.on('error', function(){
-		// move to next?
-	});
-
+	}
 
 }
 
@@ -145,8 +165,8 @@ function loop(val)
 			player.on('ended', function(){
 				switch(player_type){
 					case '1': setTimeout(function(){
-								player.play(0);
-								player.pause();
+								//player.play(0);
+								//player.pause();
 								player.play();
 							}, 500); break;
 					case '2': setTimeout(function(){
@@ -154,8 +174,9 @@ function loop(val)
 								//player.pause();
 								player.play();
 							}, 1000); break;
-					case '3': player.play(0);
-							break;
+					case '3': setTimeout(function(){
+								player.play();
+							}, 1000); break;
 				}
 			});
 		} else {
