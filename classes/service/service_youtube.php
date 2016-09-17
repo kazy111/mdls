@@ -8,6 +8,7 @@ class service_youtube implements service {
 	private static $client_secret = '5Cd1NEvtPd1sVh2U-D1iUc_v';
 	private static $developer_key = 'AI39si5FadVNSe6AVO1uXf9mCrBTnHcY6zkIq7OwTp7L56UZkdf16WqAgOo9qppn1V0Z_i1dS9liVSDHNGhUCrmrKchGARYDgA';
 	private static $type = service_type::youtube;
+	private static $api_url = "https://www.googleapis.com/youtube/v3";
 	private $access_token;
 	private $access_token_secret;
 	private $access_token_expire;
@@ -57,7 +58,7 @@ class service_youtube implements service {
 
 		$client = new oauth_client_class;
 		$client->server = 'Google';
-		$client->redirect_uri = 'http://'.$_SERVER['HTTP_HOST'].
+		$client->redirect_uri = 'https://'.$_SERVER['HTTP_HOST'].
 			dirname(strtok($_SERVER['REQUEST_URI'],'?')).'/connect_service.php?type='.self::$type;
 
 		$client->client_id = self::$client_id;
@@ -65,7 +66,7 @@ class service_youtube implements service {
 
 		/* API permissions
 		 */
-		$client->scope = 'http://gdata.youtube.com';
+		$client->scope = 'https://www.googleapis.com/auth/youtube';
 		if(($success = $client->Initialize()))
 		{
 			if(($success = $client->Process()))
@@ -78,7 +79,7 @@ class service_youtube implements service {
 				elseif(strlen($client->access_token))
 				{
 					$success = $client->CallAPI(
-						'http://gdata.youtube.com/feeds/api/users/default?v=2',
+						self::$api_url.'/activities?&mine=true&part=snippet,contentDetails',
 						'GET', array(), array('FailOnAccessError'=>TRUE), $user);
 				}
 			}
@@ -113,6 +114,62 @@ class service_youtube implements service {
 	public function update_timeline($manager)	// update timeline
 	{
 
+		$index = 1;
+		$max_results = 20;
+		$rated = array();
+		$xml = array();
+		$updated = '';
+		$max_updated = date(0);
+		// get recent user events
+		while(TRUE) {
+
+			$events = $this->request(self::$api_url.'/activities?&mine=true&part=snippet,contentDetails&maxResults='.$max_results.'&key='.self::$developer_key, 'GET', array(), array('FailOnAccessError'=>TRUE));
+			print_r($events);
+			break;
+			if (!$events) {
+				return FALSE;
+			}
+			if (!$events->entry ) {
+				break;
+			}
+			foreach ($events->entry as $e) {
+				$updated = date('c', strtotime((string)$e->updated));
+				if($updated > $max_updated){
+					$max_updated = $updated;
+				}
+				print($updated . ' < ' . $this->get_last_update() . '<br/>');
+				if($updated <= $this->get_last_update()){
+					break;
+				}
+
+				$yt = $e->children('http://gdata.youtube.com/schemas/2007');
+				//print_r($yt);
+				if(property_exists($yt, 'rating')){
+					//print_r($yt);
+					$rated[(string)$yt->videoid] = array('liked'=>$updated);
+					$xml[] = '<entry><id>http://gdata.youtube.com/feeds/api/videos/'.(string)$yt->videoid.'</id></entry>';
+				}
+			}
+
+			if($updated < $this->get_last_update()){
+				break;
+			}
+			$index += $max_results;
+		}
+	  exit;
+
+		$this->set_last_update($max_updated);
+
+		foreach($rated as $k => $v){
+			$item = New item(NULL, $k, self::$type, $v['uri'], $v['title'], $v['author'], $v['description'], $v['category'], $v['published'], $v['thumbnail'], '');
+			$manager->insert_tl($this->user_id, $item, $v['liked']);
+		}
+
+		$manager->update_service_last_update($this);
+		if($this->get_refreshed()){
+			$manager->upsert_service($this);
+		}
+		return TRUE;
 	}
 
 	private function request($uri, $method, $parameters, $options)
@@ -177,87 +234,90 @@ class service_youtube implements service {
 	public function update_likes($manager)		// update likes
 	{
 
-		$index = 1;
+		$nextPageToken = '';
 		$max_results = 20;
-		$rated = array();
-		$xml = array();
+		$ids = array();
+		$likedAt = array();
 		$updated = '';
 		$max_updated = date(0);
 		// get recent user events
 		while(TRUE) {
 
-			$events = $this->request('http://gdata.youtube.com/feeds/api/users/default/events?v=2&start-index='.$index.'&max-results='.$max_results.'&key='.self::$developer_key, 'GET', array(), array('FailOnAccessError'=>TRUE));
+			$events = $this->request(self::$api_url.'/activities?&mine=true&part=snippet,contentDetails&maxResults='.$max_results.'&key='
+									 .($nextPageToken != '' ? '&pageToken='.$nextPageToken : '')
+									 .self::$developer_key,
+									 'GET', array(), array('FailOnAccessError'=>TRUE));
 			//print_r($events);
 			if (!$events) {
-				return FALSE;
-			}
-			if (!$events->entry ) {
+				//return FALSE;
 				break;
 			}
-			foreach ($events->entry as $e) {
-				$updated = date('c', strtotime((string)$e->updated));
-				if($updated > $max_updated){
-					$max_updated = $updated;
+			if (!$events->items) {
+				break;
+			}
+			foreach ($events->items as $e) {
+				$published = date('c', strtotime((string)$e->snippet->publishedAt));
+				if($published > $max_updated){
+					$max_updated = $published;
 				}
-				//print($updated . ' < ' . $this->get_last_update() . '<br/>');
-				if($updated <= $this->get_last_update()){
+				//print_r($e);
+				//print($published . ' < ' . $this->get_last_update() . '<br/>');
+				if($published <= $this->get_last_update()){
 					break;
 				}
-
-				$yt = $e->children('http://gdata.youtube.com/schemas/2007');
-				//print_r($yt);
-				if(property_exists($yt, 'rating')){
-					//print_r($yt);
-					$rated[(string)$yt->videoid] = array('liked'=>$updated);
-					$xml[] = '<entry><id>http://gdata.youtube.com/feeds/api/videos/'.(string)$yt->videoid.'</id></entry>';
+				if( property_exists($e->contentDetails, 'like') ) {
+					$videoId = (string)$e->contentDetails->like->resourceId->videoId;
+					$ids[] = $videoId;
+					$likedAt[$videoId] = $published;
 				}
 			}
 
-			if($updated < $this->get_last_update()){
+			if($published < $this->get_last_update()){
 				break;
 			}
-			$index += $max_results;
+		  
+			// get next page or break;
+			if (property_exists($events, 'nextPageToken')) {
+				$nextPageToken = $events->nextPageToken;
+			} else {
+				break;
+			}
 		}
 
-		$this->set_last_update($max_updated);
+		//$this->set_last_update($max_updated);
 
 		// get info of each rated videos
-  		$xml_chunked = array_chunk($xml, 50);
-  		//print_r($xml_chunked);
-  		foreach($xml_chunked as $chunk){
-			$req = '<feed xmlns=\'http://www.w3.org/2005/Atom\'  xmlns:media=\'http://search.yahoo.com/mrss/\' '
-				  .' xmlns:batch=\'http://schemas.google.com/gdata/batch\' '
-	 			  .' xmlns:yt=\'http://gdata.youtube.com/schemas/2007\'> '
-				  .'<batch:operation type=\'query\'/>'.implode('', $chunk) . '</feed>';
-			$stream = stream_context_create(array('http' => array(
-				'method' => 'POST',
-				'header' => 'Content-type: application/x-www-form-urlencoded',
-				'content'   => $req,
-			)));
-			//print_r(file_get_contents('http://gdata.youtube.com/feeds/api/videos/batch?v=2', false, $stream));
-			$videos = simplexml_load_string(file_get_contents('http://gdata.youtube.com/feeds/api/videos/batch?v=2&key='.self::$developer_key, FALSE, $stream), 'SimpleXMLElement', LIBXML_NOCDATA);
+		$ids_chunked = array_chunk($ids, 50);
+		foreach($ids_chunked as $chunk){
+			$videos = $this->request(self::$api_url.'/videos?part=snippet,contentDetails&id='.implode(',', $chunk).'&key='
+									 .self::$developer_key,
+									 'GET', array(), array('FailOnAccessError'=>TRUE));
 			//print_r($videos);
-			foreach ($videos->entry as $v) {
-				$media = $v->children('http://search.yahoo.com/mrss/');
-				$yt = $media->group->children('http://gdata.youtube.com/schemas/2007');
-				if(!property_exists($yt, 'videoid')) { break; } // error
-				//print_r($media->group->thumbnail[0]->attributes()->url);
-				$rated[(string)$yt->videoid]['title'] = (string)$v->title;
-				$rated[(string)$yt->videoid]['published'] = date('c', strtotime((string)$v->published));
-				$rated[(string)$yt->videoid]['author'] = (string)$v->author->name;
-				$rated[(string)$yt->videoid]['thumbnail'] = (string)$media->group->thumbnail[0]->attributes()->url;
-				$rated[(string)$yt->videoid]['category'] = (string)$media->group->category;
-				$rated[(string)$yt->videoid]['description'] = (string)$media->group->description;
-				$rated[(string)$yt->videoid]['uri'] = 'http://www.youtube.com/watch?v='.(string)$yt->videoid;
+			foreach ($videos->items as $v) {
+				$videoId   = (string)$v->id;
+				$title     = (string)$v->snippet->title;
+				$desc      = (string)$v->snippet->description;
+				$author    = (string)$v->snippet->channelTitle;
+				$thumb     = (string)$v->snippet->thumbnails->default->url;
+				$published = date('c', strtotime((string)$v->snippet->publishedAt));
+				$category  = '';
+				$item = New item(NULL,
+								 $videoId,
+								 self::$type,
+								 "https://www.youtube.com/watch?v=".$videoId,
+								 $title,
+								 $author,
+								 $desc,
+								 $category,
+								 $published,
+								 $thumb,
+								 '');
+				//print_r($item);
+				$manager->insert_likes($this->user_id, $item, $likedAt[$videoId]);
 			}
-  		}
-			
-  		foreach($rated as $k => $v){
-  			$item = New item(NULL, $k, self::$type, $v['uri'], $v['title'], $v['author'], $v['description'], $v['category'], $v['published'], $v['thumbnail'], '');
-  			$manager->insert_likes($this->user_id, $item, $v['liked']);
-  		}
+		}
 
-  		$manager->update_service_last_update($this);
+		$manager->update_service_last_update($this);
 		if($this->get_refreshed()){
 			$manager->upsert_service($this);
 		}
