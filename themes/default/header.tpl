@@ -4,11 +4,14 @@
 <title>{$site_title}</title>
 <link rel="shortcut icon" href="{$relative_dir_to_top}/favicon.ico" />
 <link rel="stylesheet" type="text/css" href="{$relative_dir_to_top}/css/main.css" />
+<link rel="stylesheet" type="text/css" href="{$relative_dir_to_top}/css/plyr.css" />
 <link rel="stylesheet" type="text/css" href="{$relative_dir_to_top}/css/jquery-ui-1.9.2.custom.min.css" />
 <link rel="alternate" type="application/rss+xml" href="{$relative_dir_to_top}/rss.php" title="RSS 2.0" />
 <meta name="keywords" content="{$site_title}" />
 <meta name="description" content="{$site_title}" />
 <script type="text/javascript" src="{$relative_dir_to_top}/js/popcorn-complete.js"></script>
+<script src="https://cdn.shr.one/0.1.9/shr.js"></script>
+<script type="text/javascript" src="{$relative_dir_to_top}/js/plyr.js"></script>
 <script type="text/javascript" src="{$relative_dir_to_top}/js/jquery-1.8.3.min.js"></script>
 <script type="text/javascript" src="{$relative_dir_to_top}/js/jquery-ui-1.9.2.custom.min.js"></script>
 <script type="text/javascript" src="{$relative_dir_to_top}/js/cookie.js"></script>

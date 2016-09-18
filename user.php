@@ -3,7 +3,7 @@
 
 	$user_screen_name = $_GET['user'];
 	$user = $manager->get_user_by_screen_name($user_screen_name);
-    $page_index = ( is_numeric($_GET['p']) ? (int)$_GET['p'] : 0 );
+    $page_index = ( array_key_exists('p', $_GET) && is_numeric($_GET['p']) ? (int)$_GET['p'] : 0 );
     $items_par_page = 50;
 	if(!$user){
 		redirect('index.php');

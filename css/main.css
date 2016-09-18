@@ -95,3 +95,14 @@ a:visited{
 img {
   border: none;
 }
+
+
+/* plyr css */
+.plyr__video-embed, 
+.plyr__video-embed > div {
+  height: 400px !important;
+  padding-bottom: 0px !important;
+}
+.plyr__video-embed > div {
+  transform: none !important;
+}

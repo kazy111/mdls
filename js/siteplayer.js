@@ -54,28 +54,33 @@ function load(type, url)
 
 	var needInitialize = true;
 	// create player
-
-	if (type == "3") { // SoundCloud
-		player = players[3];
-		if (player.media.src != "") {
-			//player.currentTime(0);
-			needInitialize = false;
-		}
-		player.media.src = url;
-
-		n.children().each(function(x,y){
-			if( y.id.indexOf('soundcloud-') === 0 ) {
-				y.style.visibility = 'visible';
-				y.style.zIndex = 0;
-				y.style.width = '100%';
-			}
-		});
-
-	} else {
-		player = Popcorn.smart(player_id, url);
-	}
-  
 	player_type = type;
+	switch(type){
+		case "1":
+			player = setupPlyr(player_id, 'youtube', url.substring(url.indexOf("v=")+2));			
+			return;
+		case "2":
+			player = setupPlyr(player_id, 'vimeo', url.substring(url.indexOf("/", 8)+1));
+			return;
+			//player = Popcorn.smart(player_id, url);
+			//break;
+		case "3": // SoundCloud
+			player = players[3];
+			if (player.media.src != "") {
+				//player.currentTime(0);
+				needInitialize = false;
+			}
+			player.media.src = url;
+
+			n.children().each(function(x,y){
+				if( y.id.indexOf('soundcloud-') === 0 ) {
+					y.style.visibility = 'visible';
+					y.style.zIndex = 0;
+					y.style.width = '100%';
+				}
+			});
+			break;
+	}
 
 	// add a footnote at 2 seconds, and remove it at 6 seconds
 	player.controls(true);
@@ -91,8 +96,6 @@ function load(type, url)
 				}, 500);
 			}
 		});
-
-		player
 
 		loop(player_loop);
 
@@ -150,7 +153,15 @@ function volume(vol)
 {
 	if (vol !== undefined) {
 		player_volume = vol;
-		if (player) player.volume(vol);
+		if (player) {
+			switch (player_type) {
+				case '1':
+					player.setVolume(vol * 10);
+					break;
+				default:
+					player.volume(vol);
+			}
+		}
 	} else {
 		return player ? player.volume() : 0;
 	}
@@ -185,4 +196,46 @@ function loop(val)
 	} else {
 		return player_loop;
 	}
+}
+
+function setupPlyr(boxid, type, videoId)
+{
+	var box = $(boxid);
+	box.html('<div data-type="'+type+'" data-video-id="'+videoId+'"></div>');
+	
+	// Setup the player
+	var instances = plyr.setup({
+		autoplay:			player_autoplay,
+		loop:				player_loop,
+		volume:				player_volume * 10,
+		//debug:              true,
+		title:				'Youtube',
+		iconUrl:			'./css/plyr.svg',
+		tooltips: {
+			controls:		false
+		},
+		captions: {
+			defaultActive:	true
+		}
+	});
+	plyr.loadSprite('./css/plyr.svg');
+
+	// Plyr returns an array regardless
+	var player = instances[0];
+	try {
+		player.source({
+			type:       'video',
+			title:      '',
+			sources: [{
+				src:    videoId,
+				type:   type
+			}]
+		});
+	} catch (ex) {
+		if(ex){
+
+		}
+	}
+
+	return player;
 }

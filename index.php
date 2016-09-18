@@ -4,7 +4,7 @@
 
 	$GLOBALS['extra'] = '';//is_mobile() ? 'mobile_' : '';
 
-	$page_index = ( is_numeric($_GET['p']) ? (int)$_GET['p'] : 0 );
+	$page_index = ( array_key_exists('p', $_GET) && is_numeric($_GET['p']) ? (int)$_GET['p'] : 0 );
 	$items_par_page = 50;
 
 	$page->set_title('Index');
