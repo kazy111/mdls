@@ -98,11 +98,15 @@ img {
 
 
 /* plyr css */
-.plyr__video-embed, 
-.plyr__video-embed > div {
-  height: 400px !important;
-  padding-bottom: 0px !important;
+div.plyr > div.plyr__video-embed, 
+div.plyr > div.plyr__video-embed > div {
+  height: 400px;
+  padding-bottom: 0px;
 }
-.plyr__video-embed > div {
-  transform: none !important;
+div.plyr.plyr--fullscreen-active > div.plyr__video-embed, 
+div.plyr.plyr--fullscreen-active > div.plyr__video-embed > div {
+  height: 100%;
+}
+div.plyr > div.plyr__video-embed > div {
+  transform: none;
 }
